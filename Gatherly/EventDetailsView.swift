@@ -8,7 +8,9 @@
 import SwiftUI
 
 struct EventDetailsView: View {
+    @Environment(\.dismiss) private var dismiss
     @State private var showDialog = false
+    @State private var showEditEvent = false
     let event: Event
 
     var body: some View {
@@ -28,10 +30,10 @@ struct EventDetailsView: View {
                             .foregroundColor(.white)
                         
                         HStack(spacing: 12) {
-                            Text("Aug 6, 2025")
+                            Text(event.timestamp.formatted(date: .abbreviated, time: .omitted))
                             Image(systemName: "circle.fill")
-                                .font(.system(size:5))
-                            Text("7:30 PM")
+                                .font(.system(size: 5))
+                            Text(event.timestamp.formatted(date: .omitted, time: .shortened))
                         }
                         .font(.body)
                         .foregroundColor(.gray)
@@ -72,29 +74,35 @@ struct EventDetailsView: View {
         .navigationTitle("Event Details")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-                    ToolbarItem(placement: .topBarLeading) {
-                        Button(action: {}) {
-                            Image(systemName: "chevron.left")
-                                .foregroundColor(.white)
-                        }
-                    }
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button(action: { showDialog = true }) {
-                            Image(systemName: "ellipsis")
-                                .foregroundColor(.white)
-                        }
-                    }
+            ToolbarItem(placement: .topBarLeading) {
+                Button(action: { dismiss() }) {
+                    Image(systemName: "chevron.left")
+                        .foregroundColor(.white)
                 }
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(action: { showDialog = true }) {
+                    Image(systemName: "ellipsis")
+                        .foregroundColor(.white)
+                }
+            }
+        }
         .confirmationDialog(
-                    "Advanced Actions",
-                    isPresented: $showDialog,
-                    titleVisibility: .visible
-                ) {
-                    Button("Edit Event") { }
-                    Button("Delete Event", role: .destructive) { }
-                    Button("Cancel", role: .cancel) { }
-                } message: {
-                    Text("Make changes to your event")
+            "Advanced Actions",
+            isPresented: $showDialog,
+            titleVisibility: .visible
+        ) {
+            Button("Edit Event") {
+                showDialog = false
+                showEditEvent = true
+            }
+            Button("Delete Event", role: .destructive) { }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("Make changes to your event")
+        }
+        .navigationDestination(isPresented: $showEditEvent) {
+            EditEventView(vm: EditEventViewModel(event: event))
         }
     }
 }

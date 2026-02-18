@@ -11,7 +11,7 @@ import SwiftUI
 struct GatherlyApp: App {
     var body: some Scene {
         WindowGroup {
-            HomeView()
+            HomeView(vm: EventsViewModel())
         }
     }
 }

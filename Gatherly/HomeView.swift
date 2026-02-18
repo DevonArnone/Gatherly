@@ -7,61 +7,71 @@
 
 import SwiftUI
 
-private let eventsURL = URL(string: "https://gatherly-backend-q9vm.onrender.com/events")!
-
 struct HomeView: View {
-    @State private var events: [Event] = []
-    @State private var isLoading = false
-    @State private var errorMessage: String?
+    @Bindable var vm: EventsViewModel
+
+    private let columns = [
+        GridItem(.flexible(), spacing: 15),
+        GridItem(.flexible(), spacing: 15)
+    ]
 
     var body: some View {
         NavigationStack {
             Group {
-                if isLoading {
+                if vm.isLoading {
                     ProgressView("Loading events…")
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else if let error = errorMessage {
+                } else if let error = vm.errorMessage {
                     ContentUnavailableView(
                         "Couldn't load events",
                         systemImage: "exclamationmark.triangle",
                         description: Text(error)
                     )
                 } else {
-                    List(events) { event in
-                        NavigationLink(value: event) {
-                            EventCardView(event: event)
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack {
+                                Button(action: {}) {
+                                    Label("Sort", systemImage: "arrow.up.arrow.down")
+                                }
+                                Spacer()
+                            }
+                            .padding(.horizontal, 4)
+
+                            LazyVGrid(columns: columns, spacing: 15) {
+                                ForEach(vm.filteredEventIndices, id: \.self) { index in
+                                    let event = vm.fetchedEvents[index]
+                                    NavigationLink(value: event) {
+                                        EventCardView(event: event)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
                         }
-                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-                        .listRowBackground(Color.clear)
+                        .padding(.horizontal)
+                        .padding(.bottom, 40)
                     }
-                    .listStyle(.plain)
                     .navigationDestination(for: Event.self) { event in
                         EventDetailsView(event: event)
                     }
                 }
             }
             .navigationTitle("Events")
-            .task { await fetchEvents() }
-        }
-    }
-
-    private func fetchEvents() async {
-        isLoading = true
-        errorMessage = nil
-        defer { isLoading = false }
-
-        do {
-            let (data, _) = try await URLSession.shared.data(from: eventsURL)
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
-            let response = try decoder.decode(EventsResponse.self, from: data)
-            events = response.events
-        } catch {
-            errorMessage = error.localizedDescription
+            .searchable(text: $vm.searchText, prompt: "Search events")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink("+ Create Event") {
+                        AddEventView(vm: AddEventViewModel())
+                    }
+                }
+            }
+            .task {
+                await vm.fetchEvents()
+            }
         }
     }
 }
 
 #Preview {
-    HomeView()
+    HomeView(vm: EventsViewModel())
 }

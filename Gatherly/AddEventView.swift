@@ -1,21 +1,21 @@
 //
-//  EditEventView.swift
+//  AddEventView.swift
 //  Gatherly
 //
-//  Created by Devon Arnone on 2/11/26.
+//  Created by Devon Arnone on 2/16/26.
 //
 
 import SwiftUI
 
-struct EditEventView: View {
+struct AddEventView: View {
     @Environment(\.dismiss) private var dismiss
-    @Bindable var vm: EditEventViewModel
+    @Bindable var vm: AddEventViewModel
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Change Cover Photo")
+                    Text("Upload Cover Photo")
                         .font(.headline)
                         .foregroundColor(.white)
                     HStack(spacing: 12) {
@@ -27,11 +27,6 @@ struct EditEventView: View {
                                 .background(Color.white.opacity(0.1))
                                 .clipShape(RoundedRectangle(cornerRadius: 8))
                         }
-                        Image("Band")
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: 80, height: 80)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
                 }
 
@@ -90,7 +85,7 @@ struct EditEventView: View {
                 }
 
                 Button(action: {}) {
-                    Text("Save")
+                    Text("Create Event")
                         .font(.headline)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -106,7 +101,7 @@ struct EditEventView: View {
             .padding(.bottom, 40)
         }
         .background(Color.black.ignoresSafeArea())
-        .navigationTitle("Edit Event")
+        .navigationTitle("Create Event")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
@@ -122,11 +117,6 @@ struct EditEventView: View {
 
 #Preview {
     NavigationStack {
-        EditEventView(vm: EditEventViewModel(event: Event(
-            title: "Sunset Concert",
-            location: "PNC Music Pavilion, Charlotte, NC",
-            description: "Qorem ipsum dolor sit amet, consectetur adipiscing elit.",
-            timestamp: Date()
-        )))
+        AddEventView(vm: AddEventViewModel())
     }
 }

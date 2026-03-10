@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import PhotosUI
 
 struct EditEventView: View {
     @Environment(\.dismiss) private var dismiss
@@ -18,20 +19,22 @@ struct EditEventView: View {
                     Text("Change Cover Photo")
                         .font(.headline)
                         .foregroundColor(.white)
-                    HStack(spacing: 12) {
-                        Button(action: {}) {
+                    HStack {
+                        PhotosPicker(selection: $vm.selectedPhoto, matching: .images) {
                             Image(systemName: "plus")
-                                .font(.title)
-                                .foregroundColor(.cyan)
-                                .frame(width: 80, height: 80)
-                                .background(Color.white.opacity(0.1))
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                                .resizable()
+                                .scaledToFit()
+                                .frame(height: 35)
+                                .padding(20)
+                                .background(.thinMaterial)
                         }
-                        Image("Band")
+                        .task(id: vm.selectedPhoto) {
+                            await vm.loadImage()
+                        }
+                        vm.image?
                             .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: 80, height: 80)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                            .scaledToFit()
+                            .frame(height: 75)
                     }
                 }
 
@@ -89,7 +92,13 @@ struct EditEventView: View {
                         }
                 }
 
-                Button(action: {}) {
+                Button(action: {
+                    Task {
+                        if await vm.editEvent() {
+                            dismiss()
+                        }
+                    }
+                }) {
                     Text("Save")
                         .font(.headline)
                         .foregroundColor(.white)
@@ -101,6 +110,7 @@ struct EditEventView: View {
                         )
                 }
                 .padding(.top, 8)
+                .disabled(vm.isSaving)
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 40)

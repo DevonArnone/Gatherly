@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import PhotosUI
 
 struct AddEventView: View {
     @Environment(\.dismiss) private var dismiss
@@ -18,15 +19,22 @@ struct AddEventView: View {
                     Text("Upload Cover Photo")
                         .font(.headline)
                         .foregroundColor(.white)
-                    HStack(spacing: 12) {
-                        Button(action: {}) {
+                    HStack {
+                        PhotosPicker(selection: $vm.selectedPhoto, matching: .images) {
                             Image(systemName: "plus")
-                                .font(.title)
-                                .foregroundColor(.cyan)
-                                .frame(width: 80, height: 80)
-                                .background(Color.white.opacity(0.1))
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                                .resizable()
+                                .scaledToFit()
+                                .frame(height: 35)
+                                .padding(20)
+                                .background(.thinMaterial)
                         }
+                        .task(id: vm.selectedPhoto) {
+                            await vm.loadImage()
+                        }
+                        vm.image?
+                            .resizable()
+                            .scaledToFit()
+                            .frame(height: 75)
                     }
                 }
 
@@ -84,7 +92,13 @@ struct AddEventView: View {
                         }
                 }
 
-                Button(action: {}) {
+                Button(action: {
+                    Task {
+                        if await vm.createEvent() {
+                            dismiss()
+                        }
+                    }
+                }) {
                     Text("Create Event")
                         .font(.headline)
                         .foregroundColor(.white)
@@ -96,6 +110,7 @@ struct AddEventView: View {
                         )
                 }
                 .padding(.top, 8)
+                .disabled(vm.isSaving)
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 40)

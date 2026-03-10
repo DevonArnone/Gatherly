@@ -11,17 +11,45 @@ struct EventDetailsView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showDialog = false
     @State private var showEditEvent = false
+    @State private var isDeleting = false
     let event: Event
 
     var body: some View {
         VStack(spacing: 0) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    Image("Band")
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(height: 280)
-                        .clipped()
+                    if let imageEvent = event.image_url {
+                        if let url = URL(string: imageEvent) {
+                            AsyncImage(url: url) { phase in
+                                switch phase {
+                                case .empty:
+                                    ProgressView()
+                                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                case .success(let image):
+                                    image
+                                        .resizable()
+                                        .scaledToFill()
+                                case .failure:
+                                    Rectangle()
+                                        .foregroundStyle(.gray)
+                                @unknown default:
+                                    EmptyView()
+                                }
+                            }
+                            .frame(height: 280)
+                            .clipped()
+                        } else {
+                            Rectangle()
+                                .foregroundStyle(.gray)
+                                .frame(height: 280)
+                                .clipped()
+                        }
+                    } else {
+                        Rectangle()
+                            .foregroundStyle(.gray)
+                            .frame(height: 280)
+                            .clipped()
+                    }
                     
                     VStack(alignment: .leading, spacing: 8) {
                         Text(event.title)
@@ -96,7 +124,19 @@ struct EventDetailsView: View {
                 showDialog = false
                 showEditEvent = true
             }
-            Button("Delete Event", role: .destructive) { }
+            Button("Delete Event", role: .destructive) {
+                Task {
+                    guard let id = event.id else { return }
+                    isDeleting = true
+                    defer { isDeleting = false }
+                    do {
+                        try await EventService.shared.deleteEvent(id: id)
+                        dismiss()
+                    } catch {
+                        print("Failed to delete event: \(error.localizedDescription)")
+                    }
+                }
+            }
             Button("Cancel", role: .cancel) { }
         } message: {
             Text("Make changes to your event")
@@ -104,6 +144,7 @@ struct EventDetailsView: View {
         .navigationDestination(isPresented: $showEditEvent) {
             EditEventView(vm: EditEventViewModel(event: event))
         }
+        .disabled(isDeleting)
     }
 }
 

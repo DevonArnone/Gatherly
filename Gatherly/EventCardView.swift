@@ -12,11 +12,36 @@ struct EventCardView: View {
     
     var body: some View {
         VStack(alignment: .leading) {
-            Image(event.image ?? "Placeholder")
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-                .frame(height: 200)
-                .clipped()
+            if let imageEvent = event.image_url {
+                if let url = URL(string: imageEvent) {
+                    AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .empty:
+                            ProgressView()
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .scaledToFill()
+                        case .failure:
+                            Rectangle()
+                                .foregroundStyle(.gray)
+                        @unknown default:
+                            EmptyView()
+                        }
+                    }
+                    .frame(height: 200)
+                    .clipped()
+                } else {
+                    Rectangle()
+                        .foregroundStyle(.gray)
+                        .frame(height: 200)
+                }
+            } else {
+                Rectangle()
+                    .foregroundStyle(.gray)
+                    .frame(height: 200)
+            }
             VStack(alignment: .leading, spacing: 2) {
                             Text(event.title)
                                 .font(.headline)
@@ -51,4 +76,3 @@ struct EventCardView: View {
         .padding()
     }
 }
-

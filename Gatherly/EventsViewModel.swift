@@ -7,8 +7,6 @@
 
 import Foundation
 
-private let eventsURL = URL(string: "https://gatherly-backend-q9vm.onrender.com/events")!
-
 @Observable
 final class EventsViewModel {
     var searchText: String = ""
@@ -31,11 +29,7 @@ final class EventsViewModel {
         defer { isLoading = false }
 
         do {
-            let (data, _) = try await URLSession.shared.data(from: eventsURL)
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
-            let response = try decoder.decode(EventsResponse.self, from: data)
-            fetchedEvents = response.events
+            fetchedEvents = try await EventService.shared.getEvents()
         } catch {
             errorMessage = error.localizedDescription
         }

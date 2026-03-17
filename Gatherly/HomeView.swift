@@ -17,27 +17,44 @@ struct HomeView: View {
 
     var body: some View {
         NavigationStack {
-            Group {
-                if vm.isLoading {
-                    ProgressView("Loading events…")
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else if let error = vm.errorMessage {
-                    ContentUnavailableView(
-                        "Couldn't load events",
-                        systemImage: "exclamationmark.triangle",
-                        description: Text(error)
-                    )
-                } else {
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 12) {
-                            HStack {
-                                Button(action: {}) {
-                                    Label("Sort", systemImage: "arrow.up.arrow.down")
-                                }
-                                Spacer()
-                            }
-                            .padding(.horizontal, 4)
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("Sort By")
+                        .padding(8)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(.primary, lineWidth: 1)
+                        )
 
+                    Spacer()
+
+                    NavigationLink {
+                        AddEventView(vm: AddEventViewModel())
+                    } label: {
+                        Text("+ Create Event")
+                            .padding(8)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .stroke(.primary, lineWidth: 1)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal)
+
+                Group {
+                    switch vm.loadingState {
+                    case .loading:
+                        ProgressView("Loading events…")
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    case .failed(let errorType):
+                        ContentUnavailableView {
+                            Label("Something went wrong", systemImage: "x.circle.fill")
+                        } description: {
+                            Text(errorType.localizedDescription)
+                        }
+                    case .idle, .success:
+                        ScrollView {
                             LazyVGrid(columns: columns, spacing: 15) {
                                 ForEach(vm.filteredEventIndices, id: \.self) { index in
                                     let event = vm.fetchedEvents[index]
@@ -47,27 +64,25 @@ struct HomeView: View {
                                     .buttonStyle(.plain)
                                 }
                             }
+                            .padding(.horizontal)
+                            .padding(.bottom, 40)
                         }
-                        .padding(.horizontal)
-                        .padding(.bottom, 40)
-                    }
-                    .navigationDestination(for: Event.self) { event in
-                        EventDetailsView(event: event)
                     }
                 }
+            }
+            .navigationDestination(for: Event.self) { event in
+                EventDetailsView(event: event)
             }
             .navigationTitle("Events")
             .searchable(text: $vm.searchText, prompt: "Search events")
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink("+ Create Event") {
-                        AddEventView(vm: AddEventViewModel())
-                    }
-                }
-            }
             .task {
                 await vm.fetchEvents()
             }
+        }
+        .alert("There was an error", isPresented: $vm.isError) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(vm.errorString)
         }
     }
 }

@@ -22,7 +22,7 @@ struct EventCardView: View {
                         case .success(let image):
                             image
                                 .resizable()
-                                .scaledToFill()
+                                .scaledToFit()
                         case .failure:
                             Rectangle()
                                 .foregroundStyle(.gray)
@@ -38,41 +38,34 @@ struct EventCardView: View {
                         .frame(height: 200)
                 }
             } else {
-                Rectangle()
-                    .foregroundStyle(.gray)
+                Image("Band")
+                    .resizable()
+                    .scaledToFit()
                     .frame(height: 200)
+                    .clipped()
             }
             VStack(alignment: .leading, spacing: 2) {
-                            Text(event.title)
-                                .font(.headline)
-                                .foregroundColor(.black)
-                            Text(event.timestamp.formatted(date: .abbreviated, time: .omitted))
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        }
-                        .padding(12)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .background(.regularMaterial)
-                    .cornerRadius(15)
+                Text(event.title)
+                    .font(.headline)
+                Text(event.timestamp.formatted(date: .abbreviated, time: .omitted))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
             }
+            .padding(12)
+        }
+        .background(.regularMaterial)
+        .cornerRadius(15)
+    }
 }
 
-
-
-
-
 #Preview {
-    ZStack {
-        Color.black.ignoresSafeArea()
-        EventCardView(event: Event(
-            title: "Sunset Concert",
-            location: "Fourth Ward, Charlotte, NC",
-            description: "Experience a live concert as the sun sets over Charlotte!",
-            timestamp: Date(),
-            image: "Band"
-        ))
-        .frame(width: 170)
-        .padding()
-    }
+    EventCardView(event: Event(
+        title: "Sunset Concert",
+        location: "Fourth Ward, Charlotte, NC",
+        description: "Experience a live concert as the sun sets over Charlotte!",
+        timestamp: Date(),
+        image: "Band"
+    ))
+    .frame(width: 170)
+    .padding()
 }

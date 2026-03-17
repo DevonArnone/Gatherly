@@ -13,109 +13,94 @@ struct AddEventView: View {
     @Bindable var vm: AddEventViewModel
 
     var body: some View {
-        ScrollView {
+        ZStack {
             VStack(alignment: .leading, spacing: 24) {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Upload Cover Photo")
                         .font(.headline)
-                        .foregroundColor(.white)
-                    HStack {
+                    HStack(spacing: 12) {
                         PhotosPicker(selection: $vm.selectedPhoto, matching: .images) {
                             Image(systemName: "plus")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(height: 35)
+                                .font(.title2)
                                 .padding(20)
-                                .background(.thinMaterial)
+                                .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12))
                         }
                         .task(id: vm.selectedPhoto) {
                             await vm.loadImage()
                         }
-                        vm.image?
-                            .resizable()
-                            .scaledToFit()
-                            .frame(height: 75)
+
+                        if let image = vm.image {
+                            image
+                                .resizable()
+                                .scaledToFit()
+                                .frame(height: 75)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
                     }
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Event Title")
                         .font(.headline)
-                        .foregroundColor(.white)
-                    TextField("", text: $vm.title)
-                        .foregroundColor(.white)
+                    TextField("Write your event's title", text: $vm.title)
                         .padding(.vertical, 8)
-                        .overlay(alignment: .bottom) {
-                            Rectangle()
-                                .frame(height: 1)
-                                .foregroundColor(.gray)
-                        }
+                    Divider()
+                        .overlay(.gray)
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Location")
                         .font(.headline)
-                        .foregroundColor(.white)
-                    TextField("", text: $vm.location)
-                        .foregroundColor(.white)
+                    TextField("Choose location of event", text: $vm.location)
                         .padding(.vertical, 8)
-                        .overlay(alignment: .bottom) {
-                            Rectangle()
-                                .frame(height: 1)
-                                .foregroundColor(.gray)
-                        }
+                    Divider()
+                        .overlay(.gray)
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Date and Time")
                         .font(.headline)
-                        .foregroundColor(.white)
                     DatePicker("", selection: $vm.timestamp, displayedComponents: [.date, .hourAndMinute])
                         .datePickerStyle(.compact)
                         .labelsHidden()
-                        .colorScheme(.dark)
-                        .tint(.cyan)
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Event Description")
                         .font(.headline)
-                        .foregroundColor(.white)
-                    TextField("", text: $vm.description, axis: .vertical)
-                        .foregroundColor(.white)
+                    TextField("Write a description for your event", text: $vm.description, axis: .vertical)
                         .lineLimit(3...8)
                         .padding(.vertical, 8)
-                        .overlay(alignment: .bottom) {
-                            Rectangle()
-                                .frame(height: 1)
-                                .foregroundColor(.gray)
-                        }
+                    Divider()
+                        .overlay(.gray)
                 }
 
                 Button(action: {
                     Task {
-                        if await vm.createEvent() {
-                            dismiss()
-                        }
+                        await vm.createEvent()
                     }
                 }) {
                     Text("Create Event")
                         .font(.headline)
-                        .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
                         .overlay(
                             RoundedRectangle(cornerRadius: 10)
-                                .stroke(Color.cyan, lineWidth: 2)
+                                .stroke(.primary, lineWidth: 1)
                         )
                 }
                 .padding(.top, 8)
-                .disabled(vm.isSaving)
+                .disabled(vm.isSubmitting)
             }
             .padding(.horizontal, 20)
-            .padding(.bottom, 40)
+            .padding(.vertical, 24)
+
+            if vm.isSubmitting {
+                Color.black.opacity(0.15)
+                    .ignoresSafeArea()
+                ProgressView("Saving event...")
+            }
         }
-        .background(Color.black.ignoresSafeArea())
         .navigationTitle("Create Event")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -123,10 +108,19 @@ struct AddEventView: View {
                 Button("Cancel") {
                     dismiss()
                 }
-                .foregroundColor(.white)
             }
         }
         .navigationBarBackButtonHidden(true)
+        .alert("There was an error", isPresented: $vm.isError) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(vm.errorString)
+        }
+        .onChange(of: vm.didCreateEvent) { _, didCreateEvent in
+            if didCreateEvent {
+                dismiss()
+            }
+        }
     }
 }
 

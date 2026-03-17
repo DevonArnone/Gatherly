@@ -11,23 +11,46 @@ import UIKit
 
 @Observable
 class EventService {
-    public static let shared: EventService = EventService()
+    static let shared = try! EventService()
 
-    let baseURL: URL = URL(string: "https://gatherly-backend-q9vm.onrender.com/")!
+    private let baseURL: URL
+
+    private init() throws {
+        guard let url = URL(string: "https://gatherly-backend-q9vm.onrender.com/") else {
+            throw ErrorType.invalidURL
+        }
+        baseURL = url
+    }
 
     func getEvents() async throws -> [Event] {
         let path = baseURL.appending(path: "events")
-        let (data, response) = try await URLSession.shared.data(from: path)
+        do {
+            let (data, response) = try await URLSession.shared.data(from: path)
 
-        guard let httpResponse = response as? HTTPURLResponse,
-              (200...299).contains(httpResponse.statusCode) else {
-            throw URLError(.badServerResponse)
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw ErrorType.networkError
+            }
+
+            guard (200...299).contains(httpResponse.statusCode) else {
+                throw ErrorType.networkError
+            }
+
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+
+            do {
+                let events = try decoder.decode(EventsResponse.self, from: data)
+                return events.events
+            } catch {
+                throw ErrorType.codingError
+            }
+        } catch let error as ErrorType {
+            throw error
+        } catch is URLError {
+            throw ErrorType.networkError
+        } catch {
+            throw ErrorType.unknown
         }
-
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        let events = try decoder.decode(EventsResponse.self, from: data)
-        return events.events
     }
 
     func createEvent(
@@ -58,19 +81,39 @@ class EventService {
 
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
-        request.httpBody = try encoder.encode(body)
-
-        let (data, response) = try await URLSession.shared.data(for: request)
-
-        guard let httpResponse = response as? HTTPURLResponse,
-              httpResponse.statusCode == 201 else {
-            return nil
+        do {
+            request.httpBody = try encoder.encode(body)
+        } catch {
+            throw ErrorType.codingError
         }
 
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        let created = try decoder.decode(Event.self, from: data)
-        return created
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw ErrorType.networkError
+            }
+
+            guard httpResponse.statusCode == 201 else {
+                throw ErrorType.networkError
+            }
+
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+
+            do {
+                let created = try decoder.decode(Event.self, from: data)
+                return created
+            } catch {
+                throw ErrorType.codingError
+            }
+        } catch let error as ErrorType {
+            throw error
+        } catch is URLError {
+            throw ErrorType.networkError
+        } catch {
+            throw ErrorType.unknown
+        }
     }
 
     func editEvent(
@@ -99,12 +142,26 @@ class EventService {
 
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
-        request.httpBody = try encoder.encode(body)
+        do {
+            request.httpBody = try encoder.encode(body)
+        } catch {
+            throw ErrorType.codingError
+        }
 
-        let (_, response) = try await URLSession.shared.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse,
-              (200...299).contains(httpResponse.statusCode) else {
-            throw URLError(.badServerResponse)
+        do {
+            let (_, response) = try await URLSession.shared.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw ErrorType.networkError
+            }
+            guard (200...299).contains(httpResponse.statusCode) else {
+                throw ErrorType.networkError
+            }
+        } catch let error as ErrorType {
+            throw error
+        } catch is URLError {
+            throw ErrorType.networkError
+        } catch {
+            throw ErrorType.unknown
         }
     }
 
@@ -116,14 +173,28 @@ class EventService {
 
         let body = ["creatorPid": "730751173"]
         let encoder = JSONEncoder()
-        let data = try encoder.encode(body)
-        request.httpBody = data
+        do {
+            let data = try encoder.encode(body)
+            request.httpBody = data
+        } catch {
+            throw ErrorType.codingError
+        }
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        let (_, response) = try await URLSession.shared.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse,
-              (200...299).contains(httpResponse.statusCode) else {
-            throw URLError(.badServerResponse)
+        do {
+            let (_, response) = try await URLSession.shared.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw ErrorType.networkError
+            }
+            guard (200...299).contains(httpResponse.statusCode) else {
+                throw ErrorType.networkError
+            }
+        } catch let error as ErrorType {
+            throw error
+        } catch is URLError {
+            throw ErrorType.networkError
+        } catch {
+            throw ErrorType.unknown
         }
     }
 }

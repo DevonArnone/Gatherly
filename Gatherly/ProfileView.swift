@@ -6,46 +6,57 @@
 //
 
 import SwiftUI
+import PhotosUI
 
 struct ProfileView: View {
     @Bindable var vm: ProfileViewModel
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 24) {
-                    Image(systemName: "person.circle.fill")
-                        .font(.system(size: 80))
-                        .foregroundColor(.gray)
-
-                    Text("First Last")
-                        .font(.title2)
-                        .fontWeight(.semibold)
-
-                    HStack(spacing: 0) {
-                        ForEach(vm.tabs, id: \.self) { tab in
-                            Button {
-                                vm.selectTab(tab: tab)
-                            } label: {
-                                VStack {
-                                    Text(tab)
-                                        .foregroundStyle(.primary)
-                                    Rectangle()
-                                        .fill(vm.selectedTab == tab ? Color.cyan : Color.primary)
-                                        .frame(height: 2)
-                                        .padding(.top, 4)
-                                }
-                            }
-                            .buttonStyle(.plain)
+        ScrollView {
+            VStack(spacing: 24) {
+                PhotosPicker(selection: $vm.selectedPhoto, matching: .images) {
+                    Group {
+                        if let image = vm.image {
+                            image
+                                .resizable()
+                                .scaledToFill()
+                        } else {
+                            Image(systemName: "person.circle.fill")
+                                .font(.system(size: 80))
+                                .foregroundStyle(.secondary)
                         }
                     }
-                    .padding()
-
-                    Spacer(minLength: 40)
+                    .frame(width: 100, height: 100)
+                    .clipShape(Circle())
                 }
-                .padding(.top, 20)
+                .task(id: vm.selectedPhoto) {
+                    await vm.loadImage()
+                }
+
+                Text("First Last")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+
+                HStack(spacing: 0) {
+                    ForEach(vm.tabs, id: \.self) { tab in
+                        Button {
+                            vm.selectTab(tab: tab)
+                        } label: {
+                            VStack {
+                                Text(tab)
+                                    .foregroundStyle(.primary)
+                                Rectangle()
+                                    .fill(vm.selectedTab == tab ? Color.cyan : Color.primary)
+                                    .frame(height: 2)
+                                    .padding(.top, 4)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding()
             }
-            .navigationTitle("Profile")
+            .padding(.top, 20)
         }
     }
 }

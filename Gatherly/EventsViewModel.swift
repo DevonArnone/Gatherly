@@ -11,8 +11,16 @@ import Foundation
 final class EventsViewModel {
     var searchText: String = ""
     var fetchedEvents: [Event] = []
-    var isLoading: Bool = false
-    var errorMessage: String?
+    var loadingState: LoadingState = .idle
+    var isError: Bool = false
+    var errorString: String = ""
+
+    var isLoading: Bool {
+        if case .loading = loadingState {
+            return true
+        }
+        return false
+    }
 
     var filteredEventIndices: [Int] {
         if searchText.isEmpty {
@@ -24,14 +32,21 @@ final class EventsViewModel {
     }
 
     func fetchEvents() async {
-        isLoading = true
-        errorMessage = nil
-        defer { isLoading = false }
+        loadingState = .loading
+        isError = false
+        errorString = ""
 
         do {
             fetchedEvents = try await EventService.shared.getEvents()
+            loadingState = .success
+        } catch let error as ErrorType {
+            loadingState = .failed(error)
+            isError = true
+            errorString = error.localizedDescription
         } catch {
-            errorMessage = error.localizedDescription
+            loadingState = .failed(.unknown)
+            isError = true
+            errorString = error.localizedDescription
         }
     }
 }

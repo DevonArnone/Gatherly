@@ -14,11 +14,11 @@ struct ContentView: View {
         TabView {
             HomeView(vm: eventsVM)
                 .tabItem {
-                    Image(systemName: "house")
+                    Label("Home", systemImage: "house")
                 }
             ProfileView(vm: ProfileViewModel())
                 .tabItem {
-                    Image(systemName: "person.fill")
+                    Label("Profile", systemImage: "person.fill")
                 }
         }
     }

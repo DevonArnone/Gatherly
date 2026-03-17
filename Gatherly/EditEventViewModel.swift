@@ -13,6 +13,7 @@ import UIKit
 @Observable
 final class EditEventViewModel {
     private let eventID: String?
+    let existingImageURL: String?
     var title: String
     var location: String
     var description: String
@@ -26,11 +27,22 @@ final class EditEventViewModel {
         return nil
     }
     var selectedPhoto: PhotosPickerItem?
-    var isSaving: Bool = false
-    var errorMessage: String?
+    var loadingState: LoadingState = .idle
+    var isError: Bool = false
+    var errorString: String = ""
+    var didSaveEvent: Bool = false
+    var isSubmitting: Bool = false
+
+    var isLoading: Bool {
+        if case .loading = loadingState {
+            return true
+        }
+        return false
+    }
 
     init(event: Event) {
         self.eventID = event.id
+        self.existingImageURL = event.image_url
         self.title = event.title
         self.location = event.location
         self.description = event.description
@@ -38,33 +50,58 @@ final class EditEventViewModel {
     }
 
     func loadImage() async {
-        if let data = try? await selectedPhoto?.loadTransferable(type: Data.self) {
-            let loadedImage = UIImage(data: data)
-            uiImage = loadedImage
-            if let loadedImage, let imageData = loadedImage.jpegData(compressionQuality: 0.8) {
-                base64String = imageData.base64EncodedString()
+        guard selectedPhoto != nil else {
+            loadingState = .idle
+            return
+        }
+
+        loadingState = .loading
+        isError = false
+        errorString = ""
+        do {
+            if let data = try await selectedPhoto?.loadTransferable(type: Data.self) {
+                let loadedImage = UIImage(data: data)
+                uiImage = loadedImage
+                if let loadedImage, let imageData = loadedImage.jpegData(compressionQuality: 0.8) {
+                    base64String = imageData.base64EncodedString()
+                } else {
+                    base64String = nil
+                }
+                loadingState = .success
             } else {
-                base64String = nil
+                throw ErrorType.codingError
             }
+        } catch let error as ErrorType {
+            loadingState = .failed(error)
+            isError = true
+            errorString = error.localizedDescription
+        } catch {
+            loadingState = .failed(.unknown)
+            isError = true
+            errorString = error.localizedDescription
         }
     }
 
-    func editEvent() async -> Bool {
+    func editEvent() async {
         guard let id = eventID else {
-            errorMessage = "Missing event id."
-            return false
+            isError = true
+            errorString = "Missing event id."
+            return
         }
 
         guard !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               !location.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               !description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            errorMessage = "Please fill out all fields."
-            return false
+            isError = true
+            errorString = "Please fill out all fields."
+            return
         }
 
-        isSaving = true
-        errorMessage = nil
-        defer { isSaving = false }
+        loadingState = .loading
+        isError = false
+        errorString = ""
+        didSaveEvent = false
+        isSubmitting = true
 
         do {
             try await EventService.shared.editEvent(
@@ -75,10 +112,19 @@ final class EditEventViewModel {
                 location: location,
                 uiImage: uiImage
             )
-            return true
+            loadingState = .success
+            didSaveEvent = true
+            isSubmitting = false
+        } catch let error as ErrorType {
+            loadingState = .failed(error)
+            isError = true
+            errorString = error.localizedDescription
+            isSubmitting = false
         } catch {
-            errorMessage = error.localizedDescription
-            return false
+            loadingState = .failed(.unknown)
+            isError = true
+            errorString = error.localizedDescription
+            isSubmitting = false
         }
     }
 }

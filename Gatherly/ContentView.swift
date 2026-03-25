@@ -8,14 +8,23 @@
 import SwiftUI
 
 struct ContentView: View {
+    @State private var eventsVM = EventsViewModel()
+
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        TabView {
+            HomeView(vm: eventsVM)
+                .tabItem {
+                    Label("Home", systemImage: "house")
+                }
+            EventMapView()
+                .tabItem {
+                    Label("Map", systemImage: "map")
+                }
+            ProfileView(vm: ProfileViewModel())
+                .tabItem {
+                    Label("Profile", systemImage: "person.fill")
+                }
         }
-        .padding()
     }
 }
 

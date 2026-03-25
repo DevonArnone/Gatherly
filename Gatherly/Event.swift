@@ -5,6 +5,7 @@
 //  Created by Devon Arnone on 2/10/26.
 //
 
+import CoreLocation
 import Foundation
 
 struct Event: Hashable, Codable, Identifiable {
@@ -20,4 +21,10 @@ struct Event: Hashable, Codable, Identifiable {
 
 struct EventsResponse: Codable {
     let events: [Event]
+}
+
+struct EventAnnotation: Identifiable {
+    let id: String
+    let event: Event
+    let coordinate: CLLocationCoordinate2D
 }

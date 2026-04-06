@@ -6,9 +6,11 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct EventDetailsView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
     @State private var showDialog = false
     @State private var showEditEvent = false
     @State private var isDeleting = false
@@ -79,7 +81,20 @@ struct EventDetailsView: View {
                 Spacer()
             }
 
-            Button(action: {}) {
+            Button {
+                let rsvp = RSVPedEvent(
+                    id: event.id ?? UUID().uuidString,
+                    title: event.title,
+                    location: event.location,
+                    creatorPid: event.creatorPid,
+                    eventDescription: event.description,
+                    timestamp: event.timestamp,
+                    image_url: event.image_url
+                )
+                modelContext.insert(rsvp)
+                try? modelContext.save()
+                dismiss()
+            } label: {
                 Text("RSVP")
                     .font(.headline)
                     .frame(width: 150, height: 44)

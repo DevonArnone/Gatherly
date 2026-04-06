@@ -8,6 +8,7 @@
 import Foundation
 import PhotosUI
 import SwiftUI
+import SwiftData
 import UIKit
 
 @Observable
@@ -32,8 +33,15 @@ final class ProfileViewModel {
         // No-op for now
     }
 
-    func loadImage() async {
+    func loadImage(profile: UserProfile?, modelContext: ModelContext) async {
         if let data = try? await selectedPhoto?.loadTransferable(type: Data.self) {
+            if let profile = profile {
+                profile.imageData = data
+            } else {
+                let newProfile = UserProfile(imageData: data)
+                modelContext.insert(newProfile)
+            }
+            try? modelContext.save()
             uiImage = UIImage(data: data)
         }
     }

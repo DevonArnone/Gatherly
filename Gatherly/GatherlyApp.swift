@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 @main
 struct GatherlyApp: App {
@@ -13,5 +14,6 @@ struct GatherlyApp: App {
         WindowGroup {
             ContentView()
         }
+        .modelContainer(for: [RSVPedEvent.self, UserProfile.self])
     }
 }

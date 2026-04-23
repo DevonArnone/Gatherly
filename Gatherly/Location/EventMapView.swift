@@ -28,6 +28,22 @@ struct EventMapView: View {
                     }
                 }
             }
+            .overlay(alignment: .topLeading) {
+                Button {
+                    vm.showOnlyMyEvents.toggle()
+                    Task {
+                        do {
+                            try await vm.load()
+                        } catch {}
+                    }
+                } label: {
+                    Text(vm.showOnlyMyEvents ? "Show All Events" : "Show My Events")
+                        .padding(8)
+                        .background(.thickMaterial)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+                .padding()
+            }
             .overlay {
                 if case .loading = vm.loadingState {
                     ProgressView("Loading map...")

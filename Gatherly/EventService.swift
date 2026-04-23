@@ -22,6 +22,22 @@ class EventService {
         baseURL = url
     }
 
+    func getEvent(id: String) async throws -> Event {
+        let path = baseURL.appending(path: "events/\(id)")
+        let (data, response) = try await URLSession.shared.data(from: path)
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200...299).contains(httpResponse.statusCode) else {
+            throw ErrorType.networkError
+        }
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        do {
+            return try decoder.decode(Event.self, from: data)
+        } catch {
+            throw ErrorType.codingError
+        }
+    }
+
     func getEvents() async throws -> [Event] {
         let path = baseURL.appending(path: "events")
         do {

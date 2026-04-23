@@ -9,11 +9,16 @@ import Foundation
 
 @Observable
 final class EventsViewModel {
+    enum SortOption {
+        case none, alphabetical, upcoming
+    }
+
     var searchText: String = ""
     var fetchedEvents: [Event] = []
     var loadingState: LoadingState = .idle
     var isError: Bool = false
     var errorString: String = ""
+    var sortOption: SortOption = .none
 
     var isLoading: Bool {
         if case .loading = loadingState {
@@ -22,13 +27,20 @@ final class EventsViewModel {
         return false
     }
 
-    var filteredEventIndices: [Int] {
-        if searchText.isEmpty {
-            return Array(fetchedEvents.indices)
+    var filteredAndSortedEvents: [Event] {
+        var eventsToShow = fetchedEvents.filter { event in
+            searchText.isEmpty || event.title.localizedCaseInsensitiveContains(searchText)
         }
-        return fetchedEvents.indices.filter { index in
-            fetchedEvents[index].title.localizedCaseInsensitiveContains(searchText)
+        switch sortOption {
+        case .none:
+            break
+        case .alphabetical:
+            eventsToShow.sort { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
+        case .upcoming:
+            eventsToShow = eventsToShow.filter { $0.timestamp > Date.now }
+            eventsToShow.sort { $0.timestamp < $1.timestamp }
         }
+        return eventsToShow
     }
 
     func fetchEvents() async {

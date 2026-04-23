@@ -19,12 +19,18 @@ struct HomeView: View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    Text("Sort By")
-                        .padding(8)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6)
-                                .stroke(.primary, lineWidth: 1)
-                        )
+                    Menu {
+                        Button("Alphabetical") { vm.sortOption = .alphabetical }
+                        Button("Upcoming") { vm.sortOption = .upcoming }
+                        Button("None") { vm.sortOption = .none }
+                    } label: {
+                        Text("Sort By")
+                            .padding(8)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .stroke(.primary, lineWidth: 1)
+                            )
+                    }
 
                     Spacer()
 
@@ -56,8 +62,7 @@ struct HomeView: View {
                     case .idle, .success:
                         ScrollView {
                             LazyVGrid(columns: columns, spacing: 15) {
-                                ForEach(vm.filteredEventIndices, id: \.self) { index in
-                                    let event = vm.fetchedEvents[index]
+                                ForEach(vm.filteredAndSortedEvents, id: \.id) { event in
                                     NavigationLink(value: event) {
                                         EventCardView(event: event)
                                     }
@@ -67,11 +72,14 @@ struct HomeView: View {
                             .padding(.horizontal)
                             .padding(.bottom, 40)
                         }
+                        .refreshable {
+                            await vm.fetchEvents()
+                        }
                     }
                 }
             }
             .navigationDestination(for: Event.self) { event in
-                EventDetailsView(event: event)
+                EventDetailsView(vm: EventDetailsViewModel(event: event))
             }
             .navigationTitle("Events")
             .searchable(text: $vm.searchText, prompt: "Search events")

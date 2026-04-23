@@ -16,6 +16,7 @@ final class EventsMapViewModel {
     var loadingState: LoadingState = .idle
     var isError: Bool = false
     var errorString: String = ""
+    var showOnlyMyEvents: Bool = false
 
     private let geocoder = CLGeocoder()
 
@@ -29,10 +30,11 @@ final class EventsMapViewModel {
             events = response
 
             let addressEvents = response.filter { !$0.location.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            let filteredEvents = showOnlyMyEvents ? addressEvents.filter { $0.creatorPid == "730751173" } : addressEvents
 
             annotations.removeAll()
-            for event in addressEvents {
-                if let coordinate = try await geocode(event.location) {
+            for event in filteredEvents {
+                if let coordinate = await geocode(event.location) {
                     annotations.append(
                         EventAnnotation(
                             id: event.id ?? UUID().uuidString,
@@ -57,15 +59,10 @@ final class EventsMapViewModel {
         }
     }
 
-    private func geocode(_ address: String) async throws -> CLLocationCoordinate2D? {
-        try await withCheckedThrowingContinuation { continuation in
-            geocoder.geocodeAddressString(address) { places, error in
-                if error != nil {
-                    continuation.resume(throwing: ErrorType.geocodingError)
-                    return
-                }
-
-                let coordinate = places?.first?.location?.coordinate
+    private func geocode(_ address: String) async -> CLLocationCoordinate2D? {
+        await withCheckedContinuation { continuation in
+            geocoder.geocodeAddressString(address) { place, _ in
+                let coordinate = place?.first?.location?.coordinate
                 continuation.resume(returning: coordinate)
             }
         }
